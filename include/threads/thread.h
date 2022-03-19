@@ -29,7 +29,8 @@ typedef int tid_t;
 #define PRI_DEFAULT 31 /* Default priority. */
 #define PRI_MAX 63	   /* Highest priority. */
 #define NICE_DEFAULT 0 /*Default nice */
-
+#define ff (1 << 14)
+#define TIMER_FREQ 100
 /* A kernel thread or user process.
  *
  * Each thread structure is stored in its own 4 kB page.  The
@@ -94,12 +95,14 @@ struct thread
 	enum thread_status status; /* Thread state. */
 	char name[16];			   /* Name (for debugging purposes). */
 
+	int recent_cpu;
 	int nice;
 	int priority;				   /* Priority. */
 	int first_priority;			   /* original priority before donation_added 220309*/
 	struct lock *lock_waiting;	   /*the lock thread is waiting for*/
 	struct list donated;		   /*store donated thread*/
 	struct list_elem donated_elem; /*elem for donated list*/
+	struct list_elem all_elem;
 
 	int64_t local_tic; /* thread's sleeping ticks*/
 	/* Shared between thread.c and synch.c. */
@@ -127,6 +130,14 @@ extern bool thread_mlfqs;
 bool compare_tick(struct list_elem *a, struct list_elem *b, void *aux);
 bool compare_priority(struct list_elem *a, struct list_elem *b, void *aux);
 bool donated_compare_priority(struct list_elem *a, struct list_elem *b, void *aux);
+
+int convert_to_fixed_point(int n);
+int convert_to_integer_toward_zero(int x);
+int convert_to_integer_nearest(int x);
+int Add(int x, int n);
+int Sub(int x, int n);
+int Multiply(int x, int y);
+int Divide(int x, int y);
 
 void thread_init(void);
 void thread_start(void);
