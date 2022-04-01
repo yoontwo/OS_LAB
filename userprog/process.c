@@ -146,14 +146,14 @@ __do_fork(void *aux)
 	if (!pml4_for_each(parent->pml4, duplicate_pte, parent))
 		goto error;
 #endif
+	file_duplicate(struct file * file)
+		/* TODO: Your code goes here.
+		 * TODO: Hint) To duplicate the file object, use `file_duplicate`
+		 * TODO:       in include/filesys/file.h. Note that parent should not return
+		 * TODO:       from the fork() until this function successfully duplicates
+		 * TODO:       the resources of parent.*/
 
-	/* TODO: Your code goes here.
-	 * TODO: Hint) To duplicate the file object, use `file_duplicate`
-	 * TODO:       in include/filesys/file.h. Note that parent should not return
-	 * TODO:       from the fork() until this function successfully duplicates
-	 * TODO:       the resources of parent.*/
-
-	process_init();
+		process_init();
 
 	/* Finally, switch to the newly created process. */
 	if (succ)
@@ -257,6 +257,11 @@ int process_exec(void *f_name)
 /*wait child process to created*/
 int process_wait(tid_t child_tid UNUSED)
 {
+	struct thread *child =
+		while ()
+	{
+	}
+
 	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
