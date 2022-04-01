@@ -311,7 +311,7 @@ tid_t thread_create(const char *name, int priority,
 	int recent_cpu = thread_current()->recent_cpu;
 	/* Initialize thread. */
 	init_thread(t, name, priority, nice, recent_cpu);
-	tid = t->tid = allocate_tid();
+	tid = t->tid = allocate_tid(); /*allocate kernal stack*/
 
 	/* Call the kernel_thread if it scheduled.
 	 * Note) rdi is 1st argument, and rsi is 2nd argument. */
@@ -471,12 +471,12 @@ void mlfqs_priority(struct thread *t)
 {
 	if (t == idle_thread)
 		return;
-	enum intr_level old_level;
-	old_level = intr_disable();
+	// enum intr_level old_level;
+	// old_level = intr_disable();
 	int first = -Sub(Divide(t->recent_cpu, convert_to_fixed_point(4)), PRI_MAX);
 	int second = Sub(first, (t->nice * 2));
 	int final = convert_to_integer_nearest(second);
-	intr_set_level(old_level);
+	// intr_set_level(old_level);
 	t->priority = final;
 	if (final > PRI_MAX)
 	{
@@ -497,11 +497,11 @@ void thread_set_priority(int new_priority)
 	{
 		struct thread *curr = thread_current();
 		enum intr_level old_level;
-		old_level = intr_disable();
+		// old_level = intr_disable();
 		if (list_empty(&curr->donated))
 			curr->priority = new_priority;
 		curr->first_priority = new_priority;
-		intr_set_level(old_level);
+		// intr_set_level(old_level);
 		yield_if();
 	}
 }
@@ -516,11 +516,11 @@ int thread_get_priority(void)
 void thread_set_nice(int nice UNUSED)
 {
 	struct thread *curr = thread_current();
-	enum intr_level old_level;
-	old_level = intr_disable();
+	// enum intr_level old_level;
+	// old_level = intr_disable();
 	curr->nice = nice;
 	mlfqs_priority(curr);
-	intr_set_level(old_level);
+	// intr_set_level(old_level);
 	yield_if();
 }
 
