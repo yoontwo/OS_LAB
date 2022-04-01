@@ -103,14 +103,17 @@ struct thread
 	struct list donated;		   /*store donated thread*/
 	struct list_elem donated_elem; /*elem for donated list*/
 	struct list_elem all_elem;
-
 	int64_t local_tic; /* thread's sleeping ticks*/
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem; /* List element. */
+	struct list children;
+	struct list_elem children_elem;
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4; /* Page map level 4 */
+	int exit;		/* exit status */
+
 #endif
 #ifdef VM
 	/* Table for whole virtual memory owned by thread. */

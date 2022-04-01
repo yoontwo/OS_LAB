@@ -614,6 +614,7 @@ init_thread(struct thread *t, const char *name, int priority, int nice, int rece
 	t->tf.rsp = (uint64_t)t + PGSIZE - sizeof(void *);
 	t->lock_waiting = NULL;
 	list_init(&t->donated);
+	list_init(&t->children);
 	t->magic = THREAD_MAGIC;
 	t->nice = nice;
 	t->recent_cpu = recent_cpu;
@@ -627,6 +628,9 @@ init_thread(struct thread *t, const char *name, int priority, int nice, int rece
 	{
 		t->priority = priority;
 	}
+
+#ifdef USERPROG
+	t->exit = 0;
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should

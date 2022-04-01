@@ -77,8 +77,14 @@ initd(void *f_name)
 tid_t process_fork(const char *name, struct intr_frame *if_ UNUSED)
 {
 	/* Clone current thread to new thread.*/
-	return thread_create(name,
-						 PRI_DEFAULT, __do_fork, thread_current());
+	tid_t new_tid = thread_create(name,
+								  PRI_DEFAULT, __do_fork, thread_current());
+	if (new_tid != TID_ERROR)
+	{
+		struct thread *curr = thread_current();
+		list_push_back(&curr->children, &curr->children_elem);
+	}
+	return new_tid;
 }
 
 #ifndef VM
@@ -245,6 +251,25 @@ int process_exec(void *f_name)
 	NOT_REACHED();
 }
 
+struct thread *getChildbyTid(tid_t child_tid)
+{
+	struct thread *t;
+	struct thread *curr = thread_current();
+	struct list_elem *e = list_begin(&curr->children);
+	while (e != list_end(&curr->children))
+	{
+		t = list_entry(e, struct thread, children_elem);
+		if ((t->tid) == child_tid)
+		{
+			return t;
+		}
+		else
+			e = list_next(e);
+	}
+	printf("Wrong child tid!");
+	return NULL;
+}
+
 /* Waits for thread TID to die and returns its exit status.  If
  * it was terminated by the kernel (i.e. killed due to an
  * exception), returns -1.  If TID is invalid or if it was not a
@@ -257,10 +282,19 @@ int process_exec(void *f_name)
 /*wait child process to created*/
 int process_wait(tid_t child_tid UNUSED)
 {
-	struct thread *child =
-		while ()
-	{
-	}
+	struct thread *child = getChildbyTid(child_tid);
+	// sema down 이용
+
+	// killed by kernel ??
+
+	//직속 자식 아닐 때 ok
+	if (child == NULL)
+		return -1;
+
+	// child가 exit됨
+	// semadown
+	list_remove();
+	return child->exit;
 
 	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
