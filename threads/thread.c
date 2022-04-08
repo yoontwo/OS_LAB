@@ -405,14 +405,16 @@ tid_t thread_tid(void)
 void thread_exit(void)
 {
 	ASSERT(!intr_context());
-
+	struct thread *curr= thread_current();
 #ifdef USERPROG
+	sema_up(curr->child_sema);
 	process_exit();
 #endif
 
 	/* Just set our status to dying and schedule another process.
 	   We will be destroyed during the call to schedule_tail(). */
 	intr_disable();
+	sema_down(curr->exit_sema);
 	do_schedule(THREAD_DYING);
 	NOT_REACHED();
 }
@@ -620,6 +622,7 @@ init_thread(struct thread *t, const char *name, int priority, int nice, int rece
 	t->recent_cpu = recent_cpu;
 	t->first_priority = priority;
 	list_push_back(&all_threads, &t->all_elem);
+	t->exit = 0;
 	if (thread_mlfqs)
 	{
 		mlfqs_priority(t);
@@ -628,9 +631,16 @@ init_thread(struct thread *t, const char *name, int priority, int nice, int rece
 	{
 		t->priority = priority;
 	}
-
 #ifdef USERPROG
-	t->exit = 0;
+	int i;
+	for(i=0;i<MAX_FD;i++){
+		t->file_dscp_table[i] = NULL;
+	}
+	file_dscp_cnt = 1;
+	sema_init(&t->child_sema,0);
+	sema_init(&t->exit_sema,1);
+	
+#endif
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should

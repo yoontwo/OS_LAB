@@ -4,6 +4,7 @@
 #include <round.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include "userprog/gdt.h"
 #include "userprog/tss.h"
@@ -28,8 +29,7 @@ static void initd(void *f_name);
 static void __do_fork(void *);
 
 /* General process initializer for initd and other process. */
-static void
-process_init(void)
+static void process_init(void)
 {
 	struct thread *current = thread_current();
 }
@@ -152,14 +152,14 @@ __do_fork(void *aux)
 	if (!pml4_for_each(parent->pml4, duplicate_pte, parent))
 		goto error;
 #endif
-	file_duplicate(struct file * file)
-		/* TODO: Your code goes here.
-		 * TODO: Hint) To duplicate the file object, use `file_duplicate`
-		 * TODO:       in include/filesys/file.h. Note that parent should not return
-		 * TODO:       from the fork() until this function successfully duplicates
-		 * TODO:       the resources of parent.*/
+	/*file_duplicate(struct file * file)*/
+	/* TODO: Your code goes here.
+	 * TODO: Hint) To duplicate the file object, use `file_duplicate`
+	 * TODO:       in include/filesys/file.h. Note that parent should not return
+	 * TODO:       from the fork() until this function successfully duplicates
+	 * TODO:       the resources of parent.*/
 
-		process_init();
+	process_init();
 
 	/* Finally, switch to the newly created process. */
 	if (succ)
@@ -167,12 +167,10 @@ __do_fork(void *aux)
 error:
 	thread_exit();
 }
-
 /* Switch the current execution context to the f_name.
  * Returns -1 on fail. */
 int process_exec(void *f_name)
 {
-	printf("exec");
 	/*공백 분리 argv에 하나씩 넣기*/
 	char *n_file_name = f_name;
 	char *token, *p;
@@ -205,21 +203,20 @@ int process_exec(void *f_name)
 	/*initialize user stack*/
 
 	/*  If load failed, quit. */
-	palloc_free_page(file_name);
 	if (!success)
+	{
 		return -1;
+	}
 
 	int i;
-	// passing arguments
-	// 1. words
-	for (i = 0; i <= size; i++)
+	for (i = 1; i < size; i++)
 	{
 		_if.rsp = _if.rsp - strlen(argv[i]) - 1;
 		_if.rsp = memcpy(_if.rsp, argv[i], strlen(argv[i]) - 1);
 		argv[i] = _if.rsp;
 	}
 
-	// 8의 배수 맞춰주기
+	// 1.8의 배수 맞춰주기
 	while (_if.rsp % 8 != 0)
 	{
 		_if.rsp = _if.rsp - 1;
@@ -244,9 +241,12 @@ int process_exec(void *f_name)
 	memset(_if.rsp, 0, sizeof(void *));
 
 	// pointing argv[0]
-	_if.R.rsi = _if.rsp + 8;
+	_if.rsp = _if.rsp + 8;
+
+	// hex_dump(_if.rsp, _if.rsp, 30, true);
 	/* Start switched process. */
 	/*back to user*/
+	palloc_free_page(file_name);
 	do_iret(&_if);
 	NOT_REACHED();
 }
@@ -283,23 +283,22 @@ struct thread *getChildbyTid(tid_t child_tid)
 int process_wait(tid_t child_tid UNUSED)
 {
 	struct thread *child = getChildbyTid(child_tid);
-	// sema down 이용
-
-	// killed by kernel ??
-
-	//직속 자식 아닐 때 ok
+	struct lock *child_lock = child->birth_lock;
+	//직속 자식 아닐 때 tid invalid
 	if (child == NULL)
 		return -1;
 
-	// child가 exit됨
-	// semadown
-	list_remove();
-	return child->exit;
+	sema_down(child->child_sema);
+	int exit = child->exit;
+	list_remove(&child->children_elem);
+	sema_up(child->exit_sema);
+	return exit;
+
+	// return -1;
 
 	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
-	return -1;
 }
 
 /* Exit the process. This function is called by thread_exit (). */
@@ -310,7 +309,13 @@ void process_exit(void)
 	 * TODO: Implement process termination message (see
 	 * TODO: project2/process_termination.html).
 	 * TODO: We recommend you to implement process resource cleanup here. */
-
+	// uint64_t *curr_pml4 = curr->pml4;
+	// if(curr_pml4!=base_pml4){// if not by halt & not exit in kernel context
+	// 	printf ("%s: exit(%d)\n",curr->name,curr->exit);
+	// }
+	// if(curr->pml4!=NULL){
+	//   	pml4_destroy((uint64_t *)(curr->pml4));
+	// }
 	process_cleanup();
 }
 
@@ -443,6 +448,9 @@ load(const char *file_name, struct intr_frame *if_)
 		printf("load: %s: open failed\n", file_name);
 		goto done;
 	}
+	struct thread *curr = thread_current();
+	curr->file_dscp_cnt ++;
+	curr->file_dscp_table[curr->file_dscp_cnt] = file;
 
 	/* Read and verify executable header. */
 	if (file_read(file, &ehdr, sizeof ehdr) != sizeof ehdr || memcmp(ehdr.e_ident, "\177ELF\2\1\1", 7) || ehdr.e_type != 2 || ehdr.e_machine != 0x3E // amd64

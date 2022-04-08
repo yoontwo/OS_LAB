@@ -31,6 +31,7 @@ typedef int tid_t;
 #define NICE_DEFAULT 0 /*Default nice */
 #define ff (1 << 14)
 #define TIMER_FREQ 100
+#define MAX_FD 200
 /* A kernel thread or user process.
  *
  * Each thread structure is stored in its own 4 kB page.  The
@@ -108,11 +109,14 @@ struct thread
 	struct list_elem elem; /* List element. */
 	struct list children;
 	struct list_elem children_elem;
-
+	int exit;				 /* exit status */
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4; /* Page map level 4 */
-	int exit;		/* exit status */
+	struct file * file_dscp_table[MAX_FD];
+	int file_dscp_cnt;
+	struct semaphore *child_sema; /*for wait function */
+	struct semaphore *exit_sema; /*for information of child before exit */
 
 #endif
 #ifdef VM
